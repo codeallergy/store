@@ -3,7 +3,7 @@ module github.com/codeallergy/store
 go 1.17
 
 require (
-	github.com/codeallergy/glue v1.0.0
+	github.com/codeallergy/glue v1.0.2
 	google.golang.org/protobuf v1.28.1
 )
 
