@@ -26,6 +26,8 @@ type GetOperation struct {
 	Context       context.Context // should be initialized
 	key       []byte
 	required  bool
+	ttlPtr *int
+	versionPtr *int64
 }
 
 func (t *GetOperation) Required() *GetOperation {
@@ -47,10 +49,18 @@ func (t *GetOperation) ByRawKey(key []byte) *GetOperation {
 	return t
 }
 
+func (t *GetOperation) WithVersion(version *int64) *GetOperation {
+	t.versionPtr = version
+	return t
+}
+
+func (t *GetOperation) WithTtl(ttl *int) *GetOperation {
+	t.ttlPtr = ttl
+	return t
+}
+
 func (t *GetOperation) ToProto(container proto.Message) error {
-	var ttl int
-	var version int64
-	value, err := t.GetRaw(t.Context, t.key, &ttl, &version, t.required)
+	value, err := t.GetRaw(t.Context, t.key, t.ttlPtr, t.versionPtr, t.required)
 	if err != nil || value == nil {
 		return err
 	}
@@ -58,15 +68,11 @@ func (t *GetOperation) ToProto(container proto.Message) error {
 }
 
 func (t *GetOperation) ToBinary() ([]byte, error) {
-	var ttl int
-	var version int64
-	return t.GetRaw(t.Context, t.key, &ttl, &version, t.required)
+	return t.GetRaw(t.Context, t.key, t.ttlPtr, t.versionPtr, t.required)
 }
 
 func (t *GetOperation) ToString() (string, error) {
-	var ttl int
-	var version int64
-	content, err :=  t.GetRaw(t.Context, t.key, &ttl, &version, t.required)
+	content, err :=  t.GetRaw(t.Context, t.key, t.ttlPtr, t.versionPtr, t.required)
 	if err != nil || content == nil {
 		return "", err
 	}
@@ -74,9 +80,7 @@ func (t *GetOperation) ToString() (string, error) {
 }
 
 func (t *GetOperation) ToCounter() (uint64, error) {
-	var ttl int
-	var version int64
-	content, err :=  t.GetRaw(t.Context, t.key, &ttl, &version, t.required)
+	content, err :=  t.GetRaw(t.Context, t.key, t.ttlPtr, t.versionPtr, t.required)
 	if err != nil || len(content) < 8 {
 		return 0, err
 	}
@@ -102,3 +106,12 @@ func (t *GetOperation) ToProtoEntry(factory func() proto.Message) (entry ProtoEn
 	return
 }
 
+func (t *GetOperation) ToCounterEntry() (entry CounterEntry, err error) {
+	entry.Key = t.key
+	var content []byte
+	if content, err = t.GetRaw(t.Context, t.key, &entry.Ttl, &entry.Version, t.required); err != nil || len(content) < 8 {
+		return
+	}
+	entry.Value = binary.BigEndian.Uint64(content)
+	return
+}

@@ -16,6 +16,7 @@ package store
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"google.golang.org/protobuf/proto"
 )
@@ -104,4 +105,26 @@ func (t *EnumerateOperation) DoProto(factory func() proto.Message, cb func(*Prot
 		err = marshalErr
 	}
 	return err
+}
+
+func (t *EnumerateOperation) DoCounters(cb func(*CounterEntry) bool) (err error) {
+	if t.batchSize <= 0 {
+		t.batchSize = DefaultBatchSize
+	}
+	if t.seekBin == nil {
+		t.seekBin = t.prefixBin
+	}
+	return t.DataStore.EnumerateRaw(t.Context, t.prefixBin, t.seekBin, t.batchSize, t.onlyKeys, t.reverse, func(raw *RawEntry) bool {
+		var counter uint64
+		if len(raw.Value) >= 8 {
+			counter = binary.BigEndian.Uint64(raw.Value)
+		}
+		ce := CounterEntry{
+			Key: raw.Key,
+			Value: counter,
+			Ttl: raw.Ttl,
+			Version: raw.Version,
+		}
+		return cb(&ce)
+	})
 }

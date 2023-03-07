@@ -81,6 +81,13 @@ type ProtoEntry struct {
 	Version int64
 }
 
+type CounterEntry struct {
+	Key []byte
+	Value uint64
+	Ttl int
+	Version int64
+}
+
 var DataStoreClass = reflect.TypeOf((*DataStore)(nil)).Elem()
 type DataStore interface {
 	glue.DisposableBean
