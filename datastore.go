@@ -119,6 +119,12 @@ type DataStore interface {
 	CompareAndSet(ctx context.Context) *CompareAndSetOperation
 
 	/**
+	Sugar code for TouchOperation object ttl reset
+	*/
+
+	Touch(ctx context.Context) *TouchOperation
+
+	/**
 	Sugar code for RemoveOperation object creation
 	*/
 
@@ -157,6 +163,13 @@ type DataStore interface {
 	*/
 
 	IncrementRaw(ctx context.Context, key []byte, initial, delta int64, ttlSeconds int) (int64, error)
+
+	/**
+	Internal TouchRaw method
+	Touches entry and setup TTL for it
+	 */
+
+	TouchRaw(ctx context.Context, key []byte, ttlSeconds int) error
 
 	/**
 	Internal IncrementRaw method
